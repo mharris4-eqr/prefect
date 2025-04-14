@@ -28,7 +28,7 @@ jobs:
         uses: docker/build-push-action@v6.15.0
         with:
           context: .
-          build-args:  PYTHON_VERSION="3.10"
+          build-args:  PYTHON_VERSION=3.10
           push: true
           pull: true
           tags: labeqracr.azurecr.io/eqr-prefect:2.20.7-sp # Replace with your ACR repository and tag
