@@ -223,6 +223,8 @@ class AzureContainerJobConfiguration(BaseJobConfiguration):
         ]
     ] = Field(default=None)
     cpu: float = Field(default=ACI_DEFAULT_CPU)
+    container_group_profile_id: Optional[str] = Field(default=None)
+    standby_pool_id: Optional[str] = Field(default=None)
     gpu_count: Optional[int] = Field(default=None)
     gpu_sku: Optional[str] = Field(default=None)
     memory: float = Field(default=ACI_DEFAULT_MEMORY)
@@ -258,12 +260,17 @@ class AzureContainerJobConfiguration(BaseJobConfiguration):
         container = container_group["properties"]["containers"][0]
 
         # set the container's environment variables
-        container["properties"]["environmentVariables"] = self._get_arm_environment()
-
+        #if the container_profile_id is set, we don't need to add the image to the arm template
+        if self.container_profile_id == None:
+            container["properties"]["environmentVariables"] = self._get_arm_environment()
+        else:
+            print("container_profile_id is set, not adding environment variables to arm template")
+            container["properties"]["configMap"]["keyValuePairs"] = [] 
+            #TODO: add configMap info via an self._get_arm_environment() switch or different method
         # convert the command from a string to a list, because that's what ACI expects
         if self.command:
             container["properties"]["command"] = self.command.split(" ")
-
+        
         self._add_image()
 
         # Add the entrypoint if provided. Creating an ACI container with a
@@ -484,6 +491,25 @@ class AzureContainerVariables(BaseVariables):
         title="Subnet IDs",
         default=None,
         description=("A list of subnet IDs to associate with the container group. "),
+    )
+    container_group_profile_id: Optional[str] = Field(
+        title="Container Group Profile ID",
+        default=None,
+        description=(
+            "The ID of the container group profile to use for the container group. "
+            "This is used to ensure that the container group is created using a "
+            "container group profile. This is required to use an Azure container"
+            "group standby pool."
+        ),
+    )
+    standby_pool_id: Optional[str] = Field(
+        title = "Container Group Standby Pool ID",
+        default = None,
+        description = (
+            "The ID of the standby pool to use for the container group. "
+            "This is used to ensure that the container group is created using a "
+            "standby pool."
+        ),
     )
     dns_servers: Optional[List[str]] = Field(
         title="DNS Servers",
